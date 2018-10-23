@@ -1,0 +1,2 @@
+port: 8081
+db: root:@tcp(localhost:3306)/handshake_wallet?charset=utf8&parseTime=True&loc=Local
