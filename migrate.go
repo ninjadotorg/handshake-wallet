@@ -18,4 +18,6 @@ func main() {
 	defer db.Close()
 
 	db.AutoMigrate(&model.GiftCard{})
+	db.AutoMigrate(&model.GiftCardOrder{})
+	db.AutoMigrate(&model.GiftCardOrderDetail{})
 }

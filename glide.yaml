@@ -10,3 +10,5 @@ import:
   version: ^1.4.0
 - package: github.com/spf13/viper
   version: ^1.2.1
+- package: github.com/segmentio/ksuid
+  version: v1.0.2

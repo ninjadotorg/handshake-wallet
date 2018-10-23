@@ -12,7 +12,14 @@ func (router GiftCardRouter) Create(routerEngine *gin.Engine) *gin.RouterGroup {
 	group := routerEngine.Group("gift-card")
 	{
 		giftCardAPI := api.GiftCardApi{}
-		group.GET("/generate", giftCardAPI.Generate)
+
+		orderGroup := group.Group("/order")
+		{
+			orderGroup.GET("/generate-order-id", giftCardAPI.GenerateOrderID)
+			orderGroup.POST("/create", giftCardAPI.CreateOrder)
+		}
+
+		group.POST("/check", giftCardAPI.CheckCode)
 	}
 
 	return group

@@ -1,12 +1,20 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 
-	"github.com/rs/xid"
+	"github.com/segmentio/ksuid"
 )
 
 func GenerateGiftCardCode() string {
-	guid := xid.New()
-	return fmt.Sprintf("NINJA%s", guid.String())
+	guid := ksuid.New()
+	return fmt.Sprintf("NINJA-%s", guid.String())
+}
+
+func GenerateGiftCardOrderID() string {
+	guid := ksuid.New()
+	orderID := md5.Sum([]byte(fmt.Sprintf("gift-card-order-%s", guid.String())))
+	return hex.EncodeToString(orderID[:])
 }
