@@ -5,9 +5,10 @@ import "net/http"
 const Success = "Success"
 const InvalidRequestBody = "InvalidRequestBody"
 const InvalidRequestParam = "InvalidRequestParam"
+const InvalidGiftCardCode = "InvalidGiftCardCode"
 const OrderIDExists = "OrderIDExists"
 const CreateOrderFailed = "CreateOrderFailed"
-const InvalidGiftCardCode = "InvalidGiftCardCode"
+const UpdateOrderFailed = "UpdateOrderFailed"
 
 var CodeMessage = map[string]struct {
 	StatusCode int         `json:"status_code"`
@@ -21,4 +22,5 @@ var CodeMessage = map[string]struct {
 	OrderIDExists:       {http.StatusBadRequest, -200, "Order ID cannot be used", nil},
 	CreateOrderFailed:   {http.StatusBadRequest, -201, "Create order failed", nil},
 	InvalidGiftCardCode: {http.StatusBadRequest, -202, "Invalid code", nil},
+	UpdateOrderFailed:   {http.StatusBadRequest, -203, "Update order failed", nil},
 }
