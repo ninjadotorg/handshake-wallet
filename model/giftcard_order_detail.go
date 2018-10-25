@@ -17,6 +17,7 @@ type GiftCardOrderDetail struct {
 	ShippingCountry string  `gorm:"column:shipping_country" json:"shipping_country"`
 	ShippingPhone   string  `gorm:"column:shipping_phone" json:"shipping_phone"`
 	ShippingEmail   string  `gorm:"column:shipping_email" sql:"not null" json:"shipping_email"`
+	PersonalMessage string  `gorm:"column:personal_message" sql:"not null" json:"personal_message"`
 }
 
 func (g GiftCardOrderDetail) TableName() string {

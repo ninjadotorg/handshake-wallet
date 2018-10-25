@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/jinzhu/gorm"
+	"github.com/ninjadotorg/handshake-wallet/common"
 	"github.com/ninjadotorg/handshake-wallet/config"
-	"github.com/ninjadotorg/handshake-wallet/database"
 	"github.com/ninjadotorg/handshake-wallet/model"
 )
 
@@ -14,10 +14,12 @@ func main() {
 	config.Init()
 
 	var db *gorm.DB
-	db = database.Database()
+	db = common.Database()
 	defer db.Close()
 
 	db.AutoMigrate(&model.GiftCard{})
 	db.AutoMigrate(&model.GiftCardOrder{})
 	db.AutoMigrate(&model.GiftCardOrderDetail{})
+
+	log.Print("Migrate success")
 }

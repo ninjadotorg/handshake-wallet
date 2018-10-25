@@ -4,137 +4,111 @@ import (
 	"log"
 	"time"
 
-	"github.com/ninjadotorg/handshake-wallet/bean"
-	"github.com/ninjadotorg/handshake-wallet/database"
 	"github.com/ninjadotorg/handshake-wallet/model"
 	"github.com/ninjadotorg/handshake-wallet/utils"
 )
 
 type GiftCardDAO struct{}
 
-func (dao GiftCardDAO) GetOrder(orderID uint, email string) (bool, model.GiftCardOrder) {
-	db := database.Database()
+func (dao GiftCardDAO) GetOrder(orderID uint, email string) (model.GiftCardOrder, error) {
 	var order model.GiftCardOrder
-	if err := db.Where("id = ?", orderID).Where("email = ?", email).First(&order).Error; err != nil {
-		return false, order
+	if err := GetDB().Where("id = ?", orderID).Where("email = ?", email).First(&order).Error; err != nil {
+		return order, err
 	}
-	return true, order
+	return order, nil
 }
 
-func (dao GiftCardDAO) GetOrderDetail(orderID uint) (bool, []model.GiftCardOrderDetail) {
-	db := database.Database()
+func (dao GiftCardDAO) GetOrderDetails(orderID uint) ([]model.GiftCardOrderDetail, error) {
 	var orderDetails []model.GiftCardOrderDetail
-	if err := db.Where("order_id = ?", orderID).Find(&orderDetails).Error; err != nil {
-		return false, orderDetails
+	if err := GetDB().Where("order_id = ?", orderID).Find(&orderDetails).Error; err != nil {
+		return orderDetails, err
 	}
-	return true, orderDetails
+	return orderDetails, nil
 }
 
-func (dao GiftCardDAO) CreateOrder(name string, email string, serviceFee float64, shippingType uint, ethAddress string, additionalFee string) (bool, uint) {
-	db := database.Database()
-	giftCardOrder := model.GiftCardOrder{
-		Name:          name,
-		Email:         email,
-		ServiceFee:    serviceFee,
-		ShippingType:  shippingType,
-		EthAddress:    ethAddress,
-		AdditionalFee: additionalFee,
-	}
-
-	if err := db.Save(&giftCardOrder).Error; err != nil {
+func (dao GiftCardDAO) CreateOrder(orderModel *model.GiftCardOrder) error {
+	if err := GetDB().Save(&orderModel).Error; err != nil {
 		log.Print("CreateOrder Error", err.Error())
-		return false, 0
+		return err
 	}
-	return true, giftCardOrder.ID
+
+	return nil
 }
 
-func (dao GiftCardDAO) UpdateOrder(orderID uint, email string, transactionID string, contracID string) bool {
-	db := database.Database()
-
+func (dao GiftCardDAO) UpdateOrder(orderID uint, orderModel *model.GiftCardOrder) error {
 	var order model.GiftCardOrder
-	var success bool
+	var err error
 
-	if success, order = dao.GetOrder(orderID, email); !success {
+	if order, err = dao.GetOrder(orderID, orderModel.Email); err != nil {
 		log.Print("UpdateOrder Error: order not found")
-		return false
+		return err
 	}
 
-	order.TransactionID = transactionID
-	order.ContractID = contracID
+	order.TransactionID = orderModel.TransactionID
+	order.ContractID = orderModel.ContractID
 
-	if err := db.Save(&order).Error; err != nil {
+	if err := GetDB().Save(&order).Error; err != nil {
 		log.Print("UpdateOrder Error", err.Error())
-		return false
+		return err
 	}
 
-	return true
+	orderModel = &order
+
+	return nil
 }
 
-func (dao GiftCardDAO) UpdateOrderStatus(orderID uint, email string, status uint) bool {
-	db := database.Database()
-
+func (dao GiftCardDAO) UpdateOrderStatus(orderID uint, orderModel *model.GiftCardOrder) error {
 	var order model.GiftCardOrder
-	var success bool
+	var err error
 
-	if success, order = dao.GetOrder(orderID, email); !success {
+	if order, err = dao.GetOrder(orderModel.ID, orderModel.Email); err != nil {
 		log.Print("UpdateOrderStatus Error: order not found")
-		return false
+		return err
 	}
 
-	order.Status = status
-	if err := db.Save(&order).Error; err != nil {
+	order.Status = orderModel.Status
+	if err := GetDB().Save(&order).Error; err != nil {
 		log.Print("UpdateOrderStatus Error:", err.Error())
-		return false
+		return err
 	}
 
-	return true
+	return nil
 }
 
-func (dao GiftCardDAO) CreateOrderDetail(orderID uint, shippingDetail *bean.GiftCardOrderFormShipping, amount float64, quantity uint) (bool, uint) {
-	db := database.Database()
-	giftCardOrderDetail := model.GiftCardOrderDetail{
-		OrderID:         orderID,
-		Amount:          amount,
-		Quantity:        quantity,
-		ShippingName:    shippingDetail.Name,
-		ShippingAddress: shippingDetail.Address,
-		ShippingCity:    shippingDetail.City,
-		ShippingState:   shippingDetail.State,
-		ShippingZip:     shippingDetail.Zip,
-		ShippingCountry: shippingDetail.Country,
-		ShippingPhone:   shippingDetail.Phone,
-		ShippingEmail:   shippingDetail.Email,
-	}
-
-	if err := db.Save(&giftCardOrderDetail).Error; err != nil {
+func (dao GiftCardDAO) CreateOrderDetail(orderDetailModel *model.GiftCardOrderDetail) error {
+	if err := GetDB().Save(&orderDetailModel).Error; err != nil {
 		log.Print("CreateOrderDetail Error", err.Error())
-		return false, 0
+		return err
 	}
-	return true, giftCardOrderDetail.ID
+	return nil
 }
 
-func (dao GiftCardDAO) CreateGiftCardCode(orderID uint, amount float64) (bool, string) {
-	db := database.Database()
+func (dao GiftCardDAO) CreateGiftCardCode(orderID uint, amount float64) (string, error) {
 	code := utils.GenerateGiftCardCode()
 	encodedCode := utils.Md5(code)
-	giftCardCode := model.GiftCard{OrderID: orderID, Code: encodedCode, Amount: amount, RedeemDate: time.Now(), ExpirationDate: time.Now().AddDate(0, 6, 0)}
-
-	if err := db.Save(&giftCardCode).Error; err != nil {
-		log.Print("CreateGiftCardCode Error", err.Error())
-		return false, ""
+	giftCardCode := model.GiftCard{
+		OrderID:        orderID,
+		Code:           encodedCode,
+		Amount:         amount,
+		RedeemDate:     time.Now(),
+		ExpirationDate: time.Now().AddDate(0, 6, 0),
 	}
-	return true, code
+
+	if err := GetDB().Save(&giftCardCode).Error; err != nil {
+		log.Print("CreateGiftCardCode Error", err.Error())
+		return "", err
+	}
+	return code, nil
 }
 
-func (dao GiftCardDAO) CheckCode(code string) (bool, float64, time.Time) {
-	db := database.Database()
+func (dao GiftCardDAO) CheckCode(code string) (model.GiftCard, error) {
 	var codeModel model.GiftCard
 	encodedCode := utils.Md5(code)
-	if err := db.Where("code = ?", encodedCode).First(&codeModel).Error; err != nil {
-		log.Print(encodedCode)
+
+	if err := GetDB().Where("code = ?", encodedCode).First(&codeModel).Error; err != nil {
 		log.Print("CheckCode Error", err)
-		return false, 0, time.Now()
+		return codeModel, err
 	}
 
-	return codeModel.Status == 1, codeModel.Amount, codeModel.ExpirationDate
+	return codeModel, nil
 }

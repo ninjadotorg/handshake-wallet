@@ -9,7 +9,7 @@ import (
 type GiftCard struct {
 	BaseModel
 	OrderID        uint      `gorm:"column:order_id" sql:"not null" json:"order_id"`
-	Code           string    `gorm:"column:code" sql:"not null" json:"code"`
+	Code           string    `gorm:"column:code" sql:"not null" json:"-"`
 	RedeemUserID   uint      `gorm:"column:redeem_user_id" json:"redeem_user_id"`
 	Amount         float64   `gorm:"column:amount;default:0" sql:"not null" json:"amount"`
 	RedeemDate     time.Time `gorm:"redeem_date" json:"redeem_date"`
