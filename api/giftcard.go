@@ -57,8 +57,27 @@ func (api GiftCardApi) CheckCode(c *gin.Context) {
 	}
 
 	api_response.SuccessResponse(c, map[string]interface{}{
-		"is_redeemed":     giftCode.Status == 1,
+		"status":          giftCode.Status,
 		"expiration_date": giftCode.ExpirationDate,
 		"amount":          giftCode.Amount,
+	})
+}
+
+func (api GiftCardApi) RedeemCode(c *gin.Context) {
+	var redeemCodeForm form.GiftCardRedeemForm
+
+	if common.ValidateBody(c, &redeemCodeForm) != nil {
+		return
+	}
+
+	giftCode, ce := service.GiftCardServiceInst.RedeemCode(redeemCodeForm)
+
+	if ce.ContextValidate(c) {
+		return
+	}
+
+	api_response.SuccessResponse(c, map[string]interface{}{
+		"status": giftCode.Status,
+		"amount": giftCode.Amount,
 	})
 }

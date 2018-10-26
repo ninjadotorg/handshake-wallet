@@ -1,11 +1,15 @@
 package service
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/ninjadotorg/handshake-wallet/api_response"
+	"github.com/ninjadotorg/handshake-wallet/common"
 	"github.com/ninjadotorg/handshake-wallet/dao"
 	"github.com/ninjadotorg/handshake-wallet/form"
+	"github.com/ninjadotorg/handshake-wallet/integration/redeemhandshake_service"
 	"github.com/ninjadotorg/handshake-wallet/model"
 )
 
@@ -59,12 +63,14 @@ func (service GiftCardService) CreateOrder(orderForm form.GiftCardCreateOrderFor
 }
 
 func (service GiftCardService) UpdateOrder(orderID uint, updateOrderForm form.GiftCardUpdateOrderForm) (order model.GiftCardOrder, ce SimpleContextError) {
-	orderModel := model.GiftCardOrder{
-		TransactionID: updateOrderForm.TransactionID,
-		Email:         updateOrderForm.Email,
+	orderModel, err := service.dao.GetOrder(orderID, updateOrderForm.Email)
+
+	if ce.SetError(api_response.GetDataFailed, err) {
+		return
 	}
 
-	err := service.dao.UpdateOrder(orderID, &orderModel)
+	orderModel.TransactionID = updateOrderForm.TransactionID
+	err = service.dao.UpdateOrder(&orderModel)
 
 	if ce.SetError(api_response.UpdateDataFailed, err) {
 		return
@@ -76,9 +82,7 @@ func (service GiftCardService) UpdateOrder(orderID uint, updateOrderForm form.Gi
 }
 
 func (service GiftCardService) CheckCode(checkCodeForm form.GiftCardCheckCodeForm) (giftCard model.GiftCard, ce SimpleContextError) {
-	code := checkCodeForm.Code
-
-	giftCardModel, err := service.dao.CheckCode(code)
+	giftCardModel, err := service.dao.GetCode(checkCodeForm.Code)
 
 	if err != nil {
 		giftCard = model.GiftCard{
@@ -87,5 +91,67 @@ func (service GiftCardService) CheckCode(checkCodeForm form.GiftCardCheckCodeFor
 	} else {
 		giftCard = giftCardModel
 	}
+	return
+}
+
+func (service GiftCardService) RedeemCode(redeemForm form.GiftCardRedeemForm) (giftCard model.GiftCard, ce SimpleContextError) {
+	giftCardModel, err := service.dao.GetCode(redeemForm.Code)
+
+	if ce.SetError(api_response.InvalidGiftCardCode, err) {
+		return
+	}
+
+	if giftCardModel.Status != 0 {
+		ce.SetStatusKey(api_response.GiftCardCodeRedeemed)
+		return
+	}
+
+	if giftCardModel.IsExpired() {
+		ce.SetStatusKey(api_response.ExpiredGiftCardCode)
+		return
+	}
+
+	orderModel, err := service.dao.GetOrder(giftCardModel.OrderID, "")
+	if ce.SetError(api_response.GetDataFailed, err) {
+		return
+	}
+
+	if orderModel.Status != 1 {
+		ce.SetStatusKey(api_response.RedeemGiftCardCodeFailed)
+		return
+	}
+
+	redeemID, err := strconv.Atoi(orderModel.ContractID)
+
+	if ce.SetError(api_response.RedeemGiftCardCodeFailed, err) {
+		return
+	}
+
+	// set status to processing
+	giftCardModel.Status = 2
+	err = service.dao.UpdateCode(&giftCardModel)
+
+	if ce.SetError(api_response.UpdateDataFailed, err) {
+		return
+	}
+
+	contractClient := redeemhandshake_service.RedeemHandshakeClient{}
+	amount := common.Float64ToDecimal(giftCardModel.Amount)
+	giftCardID := fmt.Sprint(giftCardModel.ID)
+
+	address := redeemForm.ToEthAddress
+	txHash, err := contractClient.UseRedeem(giftCardID, redeemID, amount, address, "")
+
+	if ce.SetError(api_response.RedeemGiftCardCodeFailed, err) {
+		return
+	}
+
+	giftCardModel.TransactionHash = txHash
+	err = service.dao.UpdateCode(&giftCardModel)
+	if ce.SetError(api_response.UpdateDataFailed, err) {
+		return
+	}
+
+	giftCard = giftCardModel
 	return
 }

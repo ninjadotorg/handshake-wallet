@@ -15,3 +15,5 @@ import:
   - dialects/mysql
 - package: github.com/segmentio/ksuid
 - package: github.com/spf13/viper
+- package: github.com/shopspring/decimal
+  version: 1.1.0

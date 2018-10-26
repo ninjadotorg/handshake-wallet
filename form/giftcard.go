@@ -1,8 +1,8 @@
 package form
 
 type GiftCardOrderFormDetail struct {
-	Amount          float64                    `json:"amount" validate:"required,numeric"`
-	Quantity        uint                       `json:"quantity" validate:"required,numeric"`
+	Amount          float64                    `json:"amount" validate:"required,numeric,gt=0"`
+	Quantity        uint                       `json:"quantity" validate:"required,numeric,gt=0"`
 	PersonalMessage string                     `json:"personal_message" validate:"omitempty"`
 	ShippingDetail  *GiftCardOrderFormShipping `json:"shipping_detail" validate:"required"`
 }
@@ -36,4 +36,9 @@ type GiftCardUpdateOrderForm struct {
 
 type GiftCardCheckCodeForm struct {
 	Code string `json:"code" validate:"required"`
+}
+
+type GiftCardRedeemForm struct {
+	Code         string `json:"code" validate:"required"`
+	ToEthAddress string `json:"to_eth_address" validate:"required,eth_addr"`
 }

@@ -15,6 +15,7 @@ func (router GiftCardRouter) Create(routerEngine *gin.Engine) *gin.RouterGroup {
 	group.POST("/order", giftCardAPI.CreateOrder)
 	group.PUT("/order", giftCardAPI.UpdateOrder)
 	group.POST("/check", giftCardAPI.CheckCode)
+	group.POST("/redeem", giftCardAPI.RedeemCode)
 
 	return group
 }
