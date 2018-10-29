@@ -23,6 +23,7 @@ func (g GiftCard) TableName() string {
 }
 
 func (g *GiftCard) BeforeCreate() (err error) {
+	g.BaseModel.BeforeCreate()
 	loc, _ := time.LoadLocation("UTC")
 	g.ExpirationDate = time.Now().In(loc).AddDate(0, 6, 0)
 	return

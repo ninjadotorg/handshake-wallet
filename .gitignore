@@ -12,4 +12,5 @@
 *.out
 
 glide.lock
-config/conf.yaml
+config/*.*
+logs/*.*

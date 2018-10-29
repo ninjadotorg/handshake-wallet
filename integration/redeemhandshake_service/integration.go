@@ -1,13 +1,17 @@
 package redeemhandshake_service
 
 import (
+	"bytes"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ninjadotorg/handshake-wallet/abi"
 	"github.com/ninjadotorg/handshake-wallet/config"
+	"github.com/ninjadotorg/handshake-wallet/form"
 	"github.com/ninjadotorg/handshake-wallet/integration/ethereum_service"
+	"github.com/ninjadotorg/handshake-wallet/utils"
 	"github.com/shopspring/decimal"
 )
 
@@ -51,6 +55,86 @@ func (c *RedeemHandshakeClient) close() {
 
 func (c *RedeemHandshakeClient) closeWrite() {
 	c.writeClient.Close()
+}
+
+func (c *RedeemHandshakeClient) GetInitRedeemEvent(startBlock uint64) (orders []form.OnChainInitRedeemBlock, endBlock uint64, err error) {
+	c.initialize()
+
+	opt := &bind.FilterOpts{
+		Start: startBlock,
+	}
+	past, errInit := c.redeemHandshake.FilterInitRedeem(opt)
+	if errInit != nil {
+		err = errInit
+		return
+	}
+
+	notEmpty := true
+	endBlock = startBlock
+	for notEmpty {
+		notEmpty = past.Next()
+		if notEmpty {
+			endBlock = past.Event.Raw.BlockNumber
+			txHash := past.Event.Raw.TxHash.String()
+
+			orderID := string(bytes.Trim(past.Event.Offchain[:], "\x00"))
+			rid := uint(past.Event.Rid.Uint64())
+			fee, _ := decimal.NewFromBigInt(past.Event.Fee, 0).Div(WeiDecimal).Float64()
+			if orderID != "" {
+				orders = append(orders, form.OnChainInitRedeemBlock{
+					OrderID:    utils.GetOrderNumber(orderID),
+					ContractID: rid,
+					Fee:        fee,
+					BaseOnChainBlock: form.BaseOnChainBlock{
+						BlockNumber: endBlock,
+						TxHash:      txHash,
+					},
+				})
+			}
+		}
+	}
+	c.close()
+
+	return
+}
+
+func (c *RedeemHandshakeClient) GetUseRedeemEvent(startBlock uint64) (orders []form.OnChainUseRedeemBlock, endBlock uint64, err error) {
+	c.initialize()
+
+	opt := &bind.FilterOpts{
+		Start: startBlock,
+	}
+	past, errInit := c.redeemHandshake.FilterUseRedeem(opt)
+	if errInit != nil {
+		err = errInit
+		return
+	}
+
+	notEmpty := true
+	endBlock = startBlock
+	for notEmpty {
+		notEmpty = past.Next()
+		if notEmpty {
+			endBlock = past.Event.Raw.BlockNumber
+			txHash := past.Event.Raw.TxHash.String()
+
+			code := string(bytes.Trim(past.Event.Offchain[:], "\x00"))
+			rid := uint(past.Event.Rid.Uint64())
+			if code != "" {
+				orders = append(orders, form.OnChainUseRedeemBlock{
+					Code:       code,
+					ContractID: rid,
+					BaseOnChainBlock: form.BaseOnChainBlock{
+						BlockNumber: endBlock,
+						TxHash:      txHash,
+					},
+				})
+			}
+		}
+	}
+	c.close()
+
+	return
 }
 
 func (c *RedeemHandshakeClient) UseRedeem(giftCardCodeId string, redeemId int, amount decimal.Decimal, address string, key string) (txHash string, err error) {

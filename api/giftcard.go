@@ -34,7 +34,7 @@ func (api GiftCardApi) UpdateOrder(c *gin.Context) {
 		return
 	}
 
-	_, ce := service.GiftCardServiceInst.UpdateOrder(uint(utils.GetOrderNumber(orderForm.OrderID)), orderForm)
+	_, ce := service.GiftCardServiceInst.UpdateOrder(utils.GetOrderNumber(orderForm.OrderID), orderForm)
 
 	if ce.ContextValidate(c) {
 		return
@@ -65,12 +65,13 @@ func (api GiftCardApi) CheckCode(c *gin.Context) {
 
 func (api GiftCardApi) RedeemCode(c *gin.Context) {
 	var redeemCodeForm form.GiftCardRedeemForm
+	userId := common.GetUserId(c)
 
 	if common.ValidateBody(c, &redeemCodeForm) != nil {
 		return
 	}
 
-	giftCode, ce := service.GiftCardServiceInst.RedeemCode(redeemCodeForm)
+	giftCode, ce := service.GiftCardServiceInst.RedeemCode(userId, redeemCodeForm)
 
 	if ce.ContextValidate(c) {
 		return

@@ -48,6 +48,15 @@ func (dao GiftCardDAO) CreateOrderDetail(orderDetailModel *model.GiftCardOrderDe
 	return nil
 }
 
+func (dao GiftCardDAO) GetOrderDetails(orderID uint) ([]model.GiftCardOrderDetail, error) {
+	var orderDetails []model.GiftCardOrderDetail
+	if err := GetDB().Where("order_id = ?", orderID).Find(&orderDetails).Error; err != nil {
+		return orderDetails, err
+	}
+
+	return orderDetails, nil
+}
+
 func (dao GiftCardDAO) CreateCode(orderID uint, amount float64) (string, error) {
 	code := utils.GenerateGiftCardCode()
 	encodedCode := utils.Md5(code)
@@ -70,6 +79,17 @@ func (dao GiftCardDAO) GetCode(code string) (model.GiftCard, error) {
 	encodedCode := utils.Md5(code)
 
 	if err := GetDB().Where("code = ?", encodedCode).First(&codeModel).Error; err != nil {
+		log.Print("CheckCode Error", err)
+		return codeModel, err
+	}
+
+	return codeModel, nil
+}
+
+func (dao GiftCardDAO) GetCodeWithoutEncrypt(code string) (model.GiftCard, error) {
+	var codeModel model.GiftCard
+
+	if err := GetDB().Where("code = ?", code).First(&codeModel).Error; err != nil {
 		log.Print("CheckCode Error", err)
 		return codeModel, err
 	}

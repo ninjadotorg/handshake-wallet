@@ -8,6 +8,8 @@ import (
 
 type GiftCardRouter struct{}
 
+var GiftCardRouterInst = GiftCardRouter{}
+
 func (router GiftCardRouter) Create(routerEngine *gin.Engine) *gin.RouterGroup {
 	group := routerEngine.Group("/gift-card")
 	giftCardAPI := api.GiftCardApi{}

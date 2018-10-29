@@ -5,13 +5,13 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/ninjadotorg/handshake-wallet/common"
-	"github.com/ninjadotorg/handshake-wallet/config"
 	"github.com/ninjadotorg/handshake-wallet/model"
 )
 
 func main() {
 	log.Print("Start migrate database")
-	config.Init()
+
+	config.InitializeProject()
 
 	var db *gorm.DB
 	db = common.Database()

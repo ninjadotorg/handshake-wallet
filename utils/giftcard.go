@@ -5,11 +5,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ninjadotorg/handshake-wallet/config"
 	"github.com/segmentio/ksuid"
 )
 
-const GIFT_CARD_ORDER_ID_PREFIX = "gift-card-order-"
+const GIFT_CARD_ORDER_ID_PREFIX = "GIFTCARDORDER-"
 
 func GenerateGiftCardCode() string {
 	guid := ksuid.New()
@@ -17,24 +16,14 @@ func GenerateGiftCardCode() string {
 }
 
 func CreateOrderID(orderNumber uint) string {
-	conf := config.GetConfig()
-	secretKey := conf.GetString("secret_key")
-	orderID := fmt.Sprintf("%s%08d", GIFT_CARD_ORDER_ID_PREFIX, orderNumber)
-	orderIDEncoded, err := HashEncrypt([]byte(secretKey), orderID)
-	if err != nil {
-		orderIDEncoded = ""
-	}
-	return orderIDEncoded
+	return fmt.Sprintf("%s%08d", GIFT_CARD_ORDER_ID_PREFIX, orderNumber)
 }
 
-func GetOrderNumber(orderID string) int {
-	conf := config.GetConfig()
-	secretKey := conf.GetString("secret_key")
-	orderID, _ = HashDecrypt([]byte(secretKey), orderID)
+func GetOrderNumber(orderID string) uint {
 	orderID = strings.Replace(orderID, GIFT_CARD_ORDER_ID_PREFIX, "", -1)
-	orderNumber, err := strconv.Atoi(orderID)
+	orderNumber, err := strconv.ParseUint(orderID, 10, 16)
 	if err != nil {
-		orderNumber = -1
+		orderNumber = 0
 	}
-	return orderNumber
+	return uint(orderNumber)
 }

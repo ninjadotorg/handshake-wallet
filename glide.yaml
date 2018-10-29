@@ -17,3 +17,8 @@ import:
 - package: github.com/spf13/viper
 - package: github.com/shopspring/decimal
   version: 1.1.0
+- package: github.com/sony/sonyflake
+- package: github.com/go-redis/redis
+  version: v6.14.2
+- package: github.com/natefinch/lumberjack
+  version: v2.1

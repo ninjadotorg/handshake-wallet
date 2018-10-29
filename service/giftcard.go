@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -94,7 +93,7 @@ func (service GiftCardService) CheckCode(checkCodeForm form.GiftCardCheckCodeFor
 	return
 }
 
-func (service GiftCardService) RedeemCode(redeemForm form.GiftCardRedeemForm) (giftCard model.GiftCard, ce SimpleContextError) {
+func (service GiftCardService) RedeemCode(userID string, redeemForm form.GiftCardRedeemForm) (giftCard model.GiftCard, ce SimpleContextError) {
 	giftCardModel, err := service.dao.GetCode(redeemForm.Code)
 
 	if ce.SetError(api_response.InvalidGiftCardCode, err) {
@@ -127,26 +126,23 @@ func (service GiftCardService) RedeemCode(redeemForm form.GiftCardRedeemForm) (g
 		return
 	}
 
-	// set status to processing
-	giftCardModel.Status = 2
-	err = service.dao.UpdateCode(&giftCardModel)
-
-	if ce.SetError(api_response.UpdateDataFailed, err) {
-		return
-	}
-
 	contractClient := redeemhandshake_service.RedeemHandshakeClient{}
 	amount := common.Float64ToDecimal(giftCardModel.Amount)
-	giftCardID := fmt.Sprint(giftCardModel.ID)
+	code := giftCardModel.Code
 
 	address := redeemForm.ToEthAddress
-	txHash, err := contractClient.UseRedeem(giftCardID, redeemID, amount, address, "")
+	txHash, err := contractClient.UseRedeem(code, redeemID, amount, address, "")
 
 	if ce.SetError(api_response.RedeemGiftCardCodeFailed, err) {
 		return
 	}
 
+	redeemUserID, _ := strconv.ParseUint(userID, 10, 16)
+
+	giftCardModel.Status = 2
+	giftCardModel.RedeemDate = time.Now()
 	giftCardModel.TransactionHash = txHash
+	giftCardModel.RedeemUserID = uint(redeemUserID)
 	err = service.dao.UpdateCode(&giftCardModel)
 	if ce.SetError(api_response.UpdateDataFailed, err) {
 		return

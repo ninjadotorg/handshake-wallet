@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/natefinch/lumberjack"
 	"github.com/ninjadotorg/handshake-wallet/config"
 	"github.com/ninjadotorg/handshake-wallet/router"
 )
@@ -14,13 +13,16 @@ import (
 func main() {
 	log.Print("Start Wallet Service")
 
-	logFile, err := os.OpenFile("logs/log.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		panic(err)
-	}
+	config.InitializeProject()
+	conf := config.GetConfig()
 
-	gin.DefaultWriter = io.MultiWriter(logFile, os.Stdout)
-	log.SetOutput(gin.DefaultWriter) // You may need this
+	log.SetOutput(&lumberjack.Logger{
+		Filename:   "logs/wallet.log",
+		MaxSize:    10, // megabytes
+		MaxBackups: 10,
+		MaxAge:     30,   //days
+		Compress:   true, // disabled by default
+	})
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
 	routerEngine := gin.New()
@@ -29,11 +31,6 @@ func main() {
 	// setup router
 	router.SetupRouters(routerEngine)
 
-	// initialize config
-	config.Init()
-	// get current config
-	config := config.GetConfig()
-
 	// start server
-	routerEngine.Run(fmt.Sprintf(":%d", config.GetInt("port")))
+	routerEngine.Run(fmt.Sprintf(":%d", conf.GetInt("port")))
 }
